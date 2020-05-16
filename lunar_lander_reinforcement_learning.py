@@ -1,6 +1,7 @@
 import gym
 import random
-import tempfile
+import os
+import pathlib
 import numpy as np
 import argparse
 
@@ -72,32 +73,58 @@ class DQL:
         self.model.fit(np.vstack(minibatch[:, 0]), y_target, epochs=self.epochs, verbose=self.verbose)
 
 
+def make_sequential_dir():
+    """Generates sequential directories"""
+    filepath = pathlib.Path(__file__).parent.absolute() / 'history'
+    i = 0
+
+    while os.path.exists(filepath / ("%04d" % i)):
+        i += 1
+
+    new_dir = filepath / ("%04d" % i)
+    os.mkdir(new_dir)
+    return new_dir
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Deep Q learning algorithm to solve the Lunar Lander environment')
-    parser.add_argument('-l', '--load', help='File containing the model weights')
-    parser.add_argument('-r', '--render', help='If set, the environment will be rendered', default=False, const=True, nargs='?')
+    parser.add_argument('-l', '--load', help='File containing the model weights', const='weights.h5', nargs='?')
+    parser.add_argument('-o', '--outfile', help='Filepath to where the weights will be stored', default='weights.h5')
+    parser.add_argument('-r', '--render', help='If set, the environment will be rendered', default=False, const=True,
+                        nargs='?')
     parser.add_argument('-e', '--episodes', help='Number of episodes the agent will make', default=200, type=int)
-    parser.add_argument('-d', '--decay', help='Sets the epsilon decay of the model (default = 0.999)', default=0.999, type=float)
-    parser.add_argument('-lr', '--learning', help='Sets the learning rate of the model (default = 0.001)', default=0.001, type=float)
+    parser.add_argument('-d', '--decay', help='Sets the epsilon decay of the model (default = 0.9)', default=0.9,
+                        type=float)
+    parser.add_argument('-lr', '--learning', help='Sets the learning rate of the model (default = 0.001)',
+                        default=0.001, type=float)
     parser.add_argument('-g', '--gamma', help='Sets the gamma of the model (default = 0.99)', default=0.99, type=float)
     args = parser.parse_args()
 
     np.set_printoptions(precision=2)
-    tdir = tempfile.mkdtemp()
+    out_dir = make_sequential_dir()
+
     env = gym.make('LunarLander-v2')
-    env = wrappers.Monitor(env, tdir, force=True, video_callable=False)
+    env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
 
     environment_size = env.observation_space.shape[0]
     action_size = env.action_space.n
 
     agent = DQL(environment_size, action_size, epsilon_decay=args.decay, gamma=args.gamma, learning_rate=args.learning)
 
+    episodes = args.episodes
+
+    print('\nSaving Results to: ' + str(out_dir) + "\n")
+    with open(out_dir / "model_parameters.txt", "w") as f:
+        f.write("Model Parameters:")
+        f.write("\nepisodes:\t" + str(episodes))
+        f.write("\nepsilon decay:\t" + str(agent.epsilon_decay))
+        f.write("\ngamma:\t\t" + str(agent.gamma))
+        f.write("\nlearning rate:\t" + str(agent.learning_rate))
+
     if args.load:
         agent.model.load_weights(args.load)
         agent.epsilon = 0
-
-    episodes = args.episodes
 
     # Cumulative reward
     reward_avg = deque(maxlen=100)
@@ -150,9 +177,7 @@ if __name__ == "__main__":
         print('episode: ', e, ' score: ', '%.2f' % episode_reward, ' avg_score: ', '%.2f' % np.average(
             reward_avg), ' frames: ', time, ' epsilon: ', '%.2f' % agent.epsilon)
 
-        # with open('trained_agent.txt', 'a') as f:
-        #     f.write(str(np.average(reward_avg)) + '\n')
-
     if not args.load:
-        agent.model.save_weights('weights.h5')
+        agent.model.save_weights(args.outfile)
+
     env.close()
