@@ -12,14 +12,14 @@ from tensorflow.keras.optimizers import Adam
 
 
 class DQL:
-    def __init__(self, environment_size, action_size):
+    def __init__(self, environment_size, action_size, epsilon_decay, gamma, learning_rate):
         self.environment_size = environment_size
         self.action_size = action_size
         self.epsilon = 1
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999
-        self.gamma = 0.99
-        self.learning_rate = 0.001
+        self.epsilon_decay = epsilon_decay
+        self.gamma = gamma
+        self.learning_rate = learning_rate
         self.epochs = 1
         self.verbose = 0
         self.minibatch_size = 30
@@ -75,9 +75,12 @@ class DQL:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Deep Q learning algorithm to solve the Lunar Lander environment')
-    parser.add_argument('-l', '--load', help='File containing the model', required=False)
-    parser.add_argument('-r', '--render', help='If set, the environment will be rendered', default=False, const=True, nargs='?', required=False)
-    parser.add_argument('-e', '--episodes', help='Number of episodes the agent will make', default=100, type=int)
+    parser.add_argument('-l', '--load', help='File containing the model weights')
+    parser.add_argument('-r', '--render', help='If set, the environment will be rendered', default=False, const=True, nargs='?')
+    parser.add_argument('-e', '--episodes', help='Number of episodes the agent will make', default=200, type=int)
+    parser.add_argument('-d', '--decay', help='Sets the epsilon decay of the model (default = 0.999)', default=0.999, type=float)
+    parser.add_argument('-lr', '--learning', help='Sets the learning rate of the model (default = 0.001)', default=0.001, type=float)
+    parser.add_argument('-g', '--gamma', help='Sets the gamma of the model (default = 0.99)', default=0.99, type=float)
     args = parser.parse_args()
 
     np.set_printoptions(precision=2)
@@ -88,7 +91,7 @@ if __name__ == "__main__":
     environment_size = env.observation_space.shape[0]
     action_size = env.action_space.n
 
-    agent = DQL(environment_size, action_size)
+    agent = DQL(environment_size, action_size, epsilon_decay=args.decay, gamma=args.gamma, learning_rate=args.learning)
 
     if args.load:
         agent.model.load_weights(args.load)
