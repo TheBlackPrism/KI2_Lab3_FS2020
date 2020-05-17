@@ -89,22 +89,32 @@ def make_sequential_dir():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Deep Q learning algorithm to solve the Lunar Lander environment')
-    parser.add_argument('-l', '--load', help='File containing the model weights', const='weights.h5', nargs='?')
-    parser.add_argument('-o', '--outfile', help='Filepath to where the weights will be stored', default='weights.h5')
-    parser.add_argument('-r', '--render', help='If set, the environment will be rendered', default=False, const=True,
-                        nargs='?')
-    parser.add_argument('-e', '--episodes', help='Number of episodes the agent will make', default=200, type=int)
-    parser.add_argument('-d', '--decay', help='Sets the epsilon decay of the model (default = 0.9)', default=0.9,
-                        type=float)
-    parser.add_argument('-lr', '--learning', help='Sets the learning rate of the model (default = 0.001)',
-                        default=0.001, type=float)
-    parser.add_argument('-g', '--gamma', help='Sets the gamma of the model (default = 0.99)', default=0.99, type=float)
+    parser.add_argument('-l', '--load',
+                        help='File containing the model weights', const='weights.h5', nargs='?')
+    parser.add_argument('-o', '--outdir',
+                        help='Filepath to where the output will be stored (default sequential numbered folder)')
+    parser.add_argument('-r', '--render',
+                        help='If set, the environment will be rendered', default=False, const=True, nargs='?')
+    parser.add_argument('-e', '--episodes',
+                        help='Number of episodes the agent will make', default=200, type=int)
+    parser.add_argument('-d', '--decay',
+                        help='Sets the epsilon decay of the model (default = 0.9)', default=0.9, type=float)
+    parser.add_argument('-lr', '--learning',
+                        help='Sets the learning rate of the model (default = 0.001)', default=0.001, type=float)
+    parser.add_argument('-g', '--gamma',
+                        help='Sets the gamma of the model (default = 0.99)', default=0.99, type=float)
     args = parser.parse_args()
 
     np.set_printoptions(precision=2)
-    out_dir = make_sequential_dir()
 
     env = gym.make('LunarLander-v2')
+
+    if args.outdir:
+        out_dir = args.outdir
+    else:
+        out_dir = make_sequential_dir()
+
+    print('\nSaving Results to: ' + str(out_dir) + "\n")
     env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
 
     environment_size = env.observation_space.shape[0]
@@ -114,7 +124,6 @@ if __name__ == "__main__":
 
     episodes = args.episodes
 
-    print('\nSaving Results to: ' + str(out_dir) + "\n")
     with open(out_dir / "model_parameters.txt", "w") as f:
         f.write("Model Parameters:")
         f.write("\nepisodes:\t" + str(episodes))
@@ -143,6 +152,10 @@ if __name__ == "__main__":
             # Query next action from learner and perform action
             action = agent.select_action(state)
             state_prime, reward, done, info = env.step(action)
+
+            # Time debuf to avoid that the algorithm floats over the target
+            # if time > max_time_per_game / 2:
+            #    reward -= (max_time_per_game / float(max_time_per_game - time)) * 20
 
             # Add cumulative reward
             episode_reward += reward
@@ -178,6 +191,6 @@ if __name__ == "__main__":
             reward_avg), ' frames: ', time, ' epsilon: ', '%.2f' % agent.epsilon)
 
     if not args.load:
-        agent.model.save_weights(args.outfile)
+        agent.model.save_weights(out_dir / 'weights.h5')
 
     env.close()
