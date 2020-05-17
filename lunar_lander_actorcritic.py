@@ -33,17 +33,27 @@ torch.manual_seed(args.seed)
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
+
+episodes = 1000
+lr = 0.002
+
+with open(out_dir / "model_parameters.txt", "w") as f:
+    f.write("Model Parameters:")
+    f.write("\nepisodes:\t" + str(episodes))
+    f.write("\ngamma:\t\t" + str(args.gamma))
+    f.write("\nlearning rate:\t" + str(lr))
+
 class Policy(nn.Module):
     """
     implements both actor and critic in one model
     """
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine_policy = nn.Linear(8, 128)
-        self.affine_value = nn.Linear(8, 128)
+        self.affine_policy = nn.Linear(env.observation_space.shape[0], 128)
+        self.affine_value = nn.Linear(env.observation_space.shape[0], 128)
 
         # actor's layer
-        self.action_head = nn.Linear(128, 4)
+        self.action_head = nn.Linear(128, env.action_space.n)
 
         # critic's layer
         self.value_head = nn.Linear(128, 1)
@@ -70,7 +80,7 @@ class Policy(nn.Module):
 
 model = Policy()
 #model = torch.load('model.ptm')
-optimizer = optim.Adam(model.parameters(), lr=0.002)
+optimizer = optim.Adam(model.parameters(), lr=lr)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -138,7 +148,7 @@ def main():
     running_reward = 10
 
     # run inifinitely many episodes
-    for i_episode in range(1000):
+    for i_episode in range(episodes):
 
         # reset environment and episode reward
         state = env.reset()
