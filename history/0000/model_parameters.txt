@@ -1,0 +1,5 @@
+Model Parameters:
+episodes:	1000
+epsilon decay:	0.99
+gamma:		0.99
+learning rate:	0.001
