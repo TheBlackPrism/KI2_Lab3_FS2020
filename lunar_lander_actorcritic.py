@@ -4,6 +4,8 @@ import numpy as np
 from itertools import count
 from collections import namedtuple
 
+from gym import wrappers
+import dir_maker
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,10 +19,15 @@ parser.add_argument('--gamma', type=float, default=0.99, metavar='G', help='disc
 parser.add_argument('--seed', type=int, default=543, metavar='N', help='random seed (default: 543)')
 parser.add_argument('--render', action='store_true', help='render the environment')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N', help='interval between training status logs (default: 10)')
+parser.add_argument('--save-interval', type=int, default=100, metavar='N', help='interval between training saving the model (default: 100)')
 args = parser.parse_args()
 
 
 env = gym.make("LunarLander-v2")
+
+out_dir = dir_maker.make_sequential_dir("AC")
+env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
+
 env.seed(args.seed)
 torch.manual_seed(args.seed)
 
@@ -62,6 +69,7 @@ class Policy(nn.Module):
 
 
 model = Policy()
+#model = torch.load('model.ptm')
 optimizer = optim.Adam(model.parameters(), lr=0.002)
 eps = np.finfo(np.float32).eps.item()
 
@@ -130,7 +138,7 @@ def main():
     running_reward = 10
 
     # run inifinitely many episodes
-    for i_episode in count(1):
+    for i_episode in range(1000):
 
         # reset environment and episode reward
         state = env.reset()
@@ -160,6 +168,9 @@ def main():
         # perform backprop
         finish_episode()
 
+        if i_episode % args.log_interval == 0:
+            torch.save(model, 'model.ptm')
+
         # log results
         if i_episode % args.log_interval == 0:
             print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(i_episode, ep_reward, running_reward))
@@ -168,6 +179,8 @@ def main():
         if running_reward > env.spec.reward_threshold:
             print("Solved! Running reward is now {} and the last episode runs to {} time steps!".format(running_reward, t))
             break
+
+        
 
 
 if __name__ == '__main__':
