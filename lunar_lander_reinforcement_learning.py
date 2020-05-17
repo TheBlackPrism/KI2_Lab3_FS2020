@@ -1,7 +1,6 @@
 import gym
 import random
-import os
-import pathlib
+import dir_maker
 import numpy as np
 import argparse
 
@@ -73,19 +72,6 @@ class DQL:
         self.model.fit(np.vstack(minibatch[:, 0]), y_target, epochs=self.epochs, verbose=self.verbose)
 
 
-def make_sequential_dir():
-    """Generates sequential directories"""
-    filepath = pathlib.Path(__file__).parent.absolute() / 'history'
-    i = 0
-
-    while os.path.exists(filepath / ("%04d" % i)):
-        i += 1
-
-    new_dir = filepath / ("%04d" % i)
-    os.mkdir(new_dir)
-    return new_dir
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Deep Q learning algorithm to solve the Lunar Lander environment')
@@ -112,7 +98,7 @@ if __name__ == "__main__":
     if args.outdir:
         out_dir = args.outdir
     else:
-        out_dir = make_sequential_dir()
+        out_dir = dir_maker.make_sequential_dir("DQL")
 
     print('\nSaving Results to: ' + str(out_dir) + "\n")
     env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
