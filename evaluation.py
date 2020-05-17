@@ -15,7 +15,7 @@ def plot_monitor_output(file, title):
     ax.set_title(title)
     ax.set_xlabel('Episode')
 
-    plt.plot(results['episode_rewards'])
+    ax.plot(results['episode_rewards'], linewidth=1)
     plt_out = file.parent / 'reward_plot.png'
     plt.savefig(plt_out, dpi=600)
     print("Plot saved as: " + str(plt_out))
