@@ -9,6 +9,10 @@ from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from gym import wrappers
+import dir_maker
+
+
 # hyperparameters
 hidden_size = 256
 learning_rate = 3e-4
@@ -128,4 +132,7 @@ def a2c(env):
 
 if __name__ == "__main__":
     env = gym.make("LunarLander-v2")
+    out_dir = dir_maker.make_sequential_dir("a2c")
+    env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
+    #env = wrappers.Monitor(env, out_dir, video_callable=lambda episode_id: True,force=True)
     a2c(env)
