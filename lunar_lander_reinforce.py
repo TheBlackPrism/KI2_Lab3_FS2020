@@ -26,7 +26,7 @@ args = parser.parse_args()
 env = gym.make('LunarLander-v2')
 
 out_dir = dir_maker.make_sequential_dir("reinforce")
-env = wrappers.Monitor(env, out_dir, force=True, video_callable=True)
+env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
 env.seed(args.seed)
 torch.manual_seed(args.seed)
 
