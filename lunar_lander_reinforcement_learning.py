@@ -89,6 +89,8 @@ if __name__ == "__main__":
                         help='Sets the learning rate of the model (default = 0.001)', default=0.001, type=float)
     parser.add_argument('-g', '--gamma',
                         help='Sets the gamma of the model (default = 0.99)', default=0.99, type=float)
+    parser.add_argument('-v', '--video',
+                        help='If set records the video of the episodes', default=False, const=True, nargs='?')
     args = parser.parse_args()
 
     np.set_printoptions(precision=2)
@@ -101,7 +103,11 @@ if __name__ == "__main__":
         out_dir = dir_maker.make_sequential_dir("DQL")
 
     print('\nSaving Results to: ' + str(out_dir) + "\n")
-    env = wrappers.Monitor(env, out_dir, force=True, video_callable=False)
+    
+    if args.video:
+        env = wrappers.Monitor(env, out_dir, video_callable=lambda episode_id: True, force=True)
+    else:
+        env = wrappers.Monitor(env, out_dir, video_callable=False, force=True)
 
     environment_size = env.observation_space.shape[0]
     action_size = env.action_space.n
@@ -177,6 +183,6 @@ if __name__ == "__main__":
             reward_avg), ' frames: ', time, ' epsilon: ', '%.2f' % agent.epsilon)
 
     if not args.load:
-        agent.model.save_weights(out_dir / 'weights.h5')
+        agent.model.save_weights(str(out_dir / 'weights.h5'))
 
     env.close()
