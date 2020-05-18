@@ -35,8 +35,8 @@ class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
         self.affine1 = nn.Linear(env.observation_space.shape[0], 128)
-        self.dropout = nn.Dropout(p=0.6)
-        self.affine2 = nn.Linear(128, 2)
+        self.dropout = nn.Dropout(p=0.2)
+        self.affine2 = nn.Linear(128, env.action_space.n)
 
         self.saved_log_probs = []
         self.rewards = []
@@ -50,7 +50,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1e-2)
+optimizer = optim.Adam(policy.parameters(), lr=0.003)
 eps = np.finfo(np.float32).eps.item()
 
 
