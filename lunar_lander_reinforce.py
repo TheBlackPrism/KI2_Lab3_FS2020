@@ -1,5 +1,6 @@
 import argparse
 import gym
+from gym import wrappers
 import numpy as np
 from itertools import count
 
@@ -8,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
-
+import dir_maker
 
 parser = argparse.ArgumentParser(description='PyTorch REINFORCE example')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
@@ -23,6 +24,9 @@ args = parser.parse_args()
 
 
 env = gym.make('LunarLander-v2')
+
+out_dir = dir_maker.make_sequential_dir("reinforce")
+env = wrappers.Monitor(env, out_dir, force=True, video_callable=True)
 env.seed(args.seed)
 torch.manual_seed(args.seed)
 
