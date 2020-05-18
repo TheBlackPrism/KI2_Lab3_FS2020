@@ -103,7 +103,7 @@ if __name__ == "__main__":
         out_dir = dir_maker.make_sequential_dir("DQL")
 
     print('\nSaving Results to: ' + str(out_dir) + "\n")
-    
+
     if args.video:
         env = wrappers.Monitor(env, out_dir, video_callable=lambda episode_id: True, force=True)
     else:
