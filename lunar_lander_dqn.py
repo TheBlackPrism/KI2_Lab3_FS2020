@@ -11,7 +11,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
 
-class DQL:
+class DQN:
     def __init__(self, environment_size, action_size, epsilon_decay, gamma, learning_rate):
         self.environment_size = environment_size
         self.action_size = action_size
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--render',
                         help='If set, the environment will be rendered', default=False, const=True, nargs='?')
     parser.add_argument('-e', '--episodes',
-                        help='Number of episodes the agent will make', default=200, type=int)
+                        help='Number of episodes the agent will make', default=10000, type=int)
     parser.add_argument('-d', '--decay',
                         help='Sets the epsilon decay of the model (default = 0.9)', default=0.9, type=float)
     parser.add_argument('-lr', '--learning',
@@ -112,13 +112,13 @@ if __name__ == "__main__":
     environment_size = env.observation_space.shape[0]
     action_size = env.action_space.n
 
-    agent = DQL(environment_size, action_size, epsilon_decay=args.decay, gamma=args.gamma, learning_rate=args.learning)
+    agent = DQN(environment_size, action_size, epsilon_decay=args.decay, gamma=args.gamma, learning_rate=args.learning)
 
-    episodes = args.episodes
+    max_episodes = args.episodes
 
     with open(out_dir / "model_parameters.txt", "w") as f:
         f.write("Model Parameters:")
-        f.write("\nepisodes:\t" + str(episodes))
+        f.write("\nepisodes:\t" + str(max_episodes))
         f.write("\nepsilon decay:\t" + str(agent.epsilon_decay))
         f.write("\ngamma:\t\t" + str(agent.gamma))
         f.write("\nlearning rate:\t" + str(agent.learning_rate))
@@ -127,16 +127,15 @@ if __name__ == "__main__":
         agent.model.load_weights(args.load)
         agent.epsilon = 0
 
-    # Cumulative reward
-    reward_avg = deque(maxlen=100)
+    running_reward = 10
+    reward = 0
 
-    for e in range(episodes):
+    for e in range(max_episodes):
         episode_reward = 0
         time = 0
         max_time_per_game = 1000
         state = env.reset()
         state = np.reshape(state, [1, environment_size])
-
         for time in range(max_time_per_game):
             if args.render:
                 env.render()
@@ -177,10 +176,16 @@ if __name__ == "__main__":
         if agent.epsilon > agent.epsilon_min:
             agent.epsilon *= agent.epsilon_decay
 
+        running_reward = 0.05 * reward + (1 - 0.05) * running_reward
+
         # Running average of past 100 episodes
-        reward_avg.append(episode_reward)
-        print('episode: ', e, ' score: ', '%.2f' % episode_reward, ' avg_score: ', '%.2f' % np.average(
-            reward_avg), ' frames: ', time, ' epsilon: ', '%.2f' % agent.epsilon)
+        print('episode: ', e, ' score: ', '%.2f' % episode_reward, ' running reward: ', '%.2f' % np.average(
+            running_reward), ' frames: ', time, ' epsilon: ', '%.2f' % agent.epsilon)
+
+        if running_reward > env.spec.reward_threshold:
+            print("Solved! Running reward is now {} and "
+                  "the last episode runs within {} time steps!".format(running_reward, time))
+            break
 
     if not args.load:
         agent.model.save_weights(str(out_dir / 'weights.h5'))
